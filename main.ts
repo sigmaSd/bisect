@@ -47,7 +47,7 @@ async function loadItems(filename: string): Promise<string[]> {
 }
 
 async function runCommand(command: string, item?: string): Promise<void> {
-  const finalCommand = item ? command.replace("@i", item) : command;
+  const finalCommand = item ? command.replaceAll("@i", item) : command;
   console.log(`\n🔧 Running: ${finalCommand}`);
 
   const result = await $.raw`${finalCommand}`.noThrow();
