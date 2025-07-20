@@ -1,22 +1,41 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@david/console-static-text@0.3": "0.3.0",
     "jsr:@david/dax@*": "0.43.1",
+    "jsr:@david/dax@0.43.2": "0.43.2",
     "jsr:@david/path@0.2": "0.2.0",
     "jsr:@david/which@~0.4.1": "0.4.1",
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/cli@1.0.6": "1.0.6",
     "jsr:@std/fmt@1": "1.0.8",
-    "jsr:@std/fs@1": "1.0.18",
+    "jsr:@std/fs@1": "1.0.19",
+    "jsr:@std/internal@^1.0.9": "1.0.9",
     "jsr:@std/io@0.225": "0.225.2",
-    "jsr:@std/path@1": "1.1.0",
+    "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.1.0": "1.1.0",
+    "jsr:@std/path@^1.1.1": "1.1.1",
     "npm:@google/gemini-cli@0.1.12": "0.1.12_react@19.1.0_ink@6.0.1__react@19.1.0"
   },
   "jsr": {
+    "@david/console-static-text@0.3.0": {
+      "integrity": "2dfb46ecee525755f7989f94ece30bba85bd8ffe3e8666abc1bf926e1ee0698d"
+    },
     "@david/dax@0.43.1": {
       "integrity": "2891dd94b53b8dec5d9caeeefe8378346a245d58edeb275274ef562b9434180e",
       "dependencies": [
+        "jsr:@david/path",
+        "jsr:@david/which",
+        "jsr:@std/fmt",
+        "jsr:@std/fs",
+        "jsr:@std/io",
+        "jsr:@std/path@1"
+      ]
+    },
+    "@david/dax@0.43.2": {
+      "integrity": "8c7df175465d994c0e3568e3eb91102768c2f1c86d2a513d7fc4cab13f9cb328",
+      "dependencies": [
+        "jsr:@david/console-static-text",
         "jsr:@david/path",
         "jsr:@david/which",
         "jsr:@std/fmt",
@@ -50,6 +69,16 @@
         "jsr:@std/path@^1.1.0"
       ]
     },
+    "@std/fs@1.0.19": {
+      "integrity": "051968c2b1eae4d2ea9f79a08a3845740ef6af10356aff43d3e2ef11ed09fb06",
+      "dependencies": [
+        "jsr:@std/internal",
+        "jsr:@std/path@^1.1.1"
+      ]
+    },
+    "@std/internal@1.0.9": {
+      "integrity": "bdfb97f83e4db7a13e8faab26fb1958d1b80cc64366501af78a0aee151696eb8"
+    },
     "@std/io@0.225.2": {
       "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7",
       "dependencies": [
@@ -58,6 +87,12 @@
     },
     "@std/path@1.1.0": {
       "integrity": "ddc94f8e3c275627281cbc23341df6b8bcc874d70374f75fec2533521e3d6886"
+    },
+    "@std/path@1.1.1": {
+      "integrity": "fe00026bd3a7e6a27f73709b83c607798be40e20c81dde655ce34052fd82ec76",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     }
   },
   "npm": {

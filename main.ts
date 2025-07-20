@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run -A
 
 import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
-import { $ } from "jsr:@david/dax";
+import { $ } from "jsr:@david/dax@0.43.2";
 
 interface BisectOptions {
   testCommand: string;
