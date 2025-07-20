@@ -98,7 +98,7 @@ Use an interactive command for manual testing:
 bisect \
   --test-with "gnome-terminal -- deno run -A npm:@google/gemini-cli@0.1.12" \
   --items-from-file commits.txt \
-  --next-state-with "git checkout @i"
+  --next-state-with "deno upgrade @i"
 ```
 
 ## How It Works
