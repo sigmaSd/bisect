@@ -14,7 +14,7 @@ This tool performs a binary search (bisect) through a list of items to help you 
 ## Installation
 
 ```bash
-deno install -A -g bisect jsr:@sigma/bisect
+deno install -A -g jsr:@sigma/bisect
 ```
 
 Or run directly:
