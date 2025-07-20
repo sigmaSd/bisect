@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run -A
 
 import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
+import { $ } from "jsr:@david/dax";
 
 interface BisectOptions {
   testCommand: string;
@@ -49,16 +50,13 @@ async function runCommand(command: string, item?: string): Promise<void> {
   const finalCommand = item ? command.replace("@i", item) : command;
   console.log(`\n🔧 Running: ${finalCommand}`);
 
-  const process = new Deno.Command("sh", {
-    args: ["-c", finalCommand],
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const { success } = await process.output();
+  const result = await $.raw`${finalCommand}`.noThrow();
+  const success = result.code === 0;
 
   if (!success) {
-    console.log(`⚠️  Command exited with non-zero status`);
+    console.log(
+      `⚠️  Command exited with non-zero status (code: ${result.code})`,
+    );
   }
 }
 
