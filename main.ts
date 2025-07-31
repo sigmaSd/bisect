@@ -9,6 +9,12 @@ interface BisectOptions {
   nextStateCommand?: string;
 }
 
+enum TestResult {
+  PASS = "pass",
+  FAIL = "fail",
+  IGNORE = "ignore",
+}
+
 function parseArguments(): BisectOptions {
   const args = parseArgs(Deno.args, {
     string: ["test-with", "items-from-file", "next-state-with"],
@@ -60,8 +66,31 @@ async function runCommand(command: string, item?: string): Promise<void> {
   }
 }
 
-function confirmResult(item: string): boolean {
-  return confirm(`Did the test PASS for item "${item}"?`);
+function confirmResult(item: string): TestResult {
+  console.log(`\nTest result for item "${item}":`);
+  console.log("  [p] Pass - the test succeeded");
+  console.log("  [f] Fail - the test failed");
+  console.log("  [i] Ignore - inconclusive/skip this item");
+
+  while (true) {
+    const input = prompt("Enter your choice (p/f/i):")?.toLowerCase().trim();
+
+    switch (input) {
+      case "p":
+      case "pass":
+        return TestResult.PASS;
+      case "f":
+      case "fail":
+        return TestResult.FAIL;
+      case "i":
+      case "ignore":
+        return TestResult.IGNORE;
+      default:
+        console.log(
+          "Invalid input. Please enter 'p' for pass, 'f' for fail, or 'i' for ignore.",
+        );
+    }
+  }
 }
 
 async function bisect(options: BisectOptions): Promise<void> {
@@ -79,43 +108,71 @@ async function bisect(options: BisectOptions): Promise<void> {
   let right = items.length - 1;
   let lastGoodIndex = -1;
   let firstBadIndex = -1;
+  const ignoredItems: number[] = [];
 
   while (left <= right) {
     const mid = Math.floor((left + right) / 2);
-    const currentItem = items[mid];
+    let currentIndex = mid;
 
-    console.log(
-      `\n🔍 Testing item ${mid + 1}/${items.length}: "${currentItem}"`,
-    );
-    console.log(
-      `📍 Range: [${left + 1}, ${right + 1}], testing middle at ${mid + 1}`,
-    );
+    // Keep trying items starting from mid until we get a non-ignore result
+    // or run out of items in the current range
+    while (currentIndex <= right) {
+      const currentItem = items[currentIndex];
 
-    // Run next-state command if provided
-    if (options.nextStateCommand) {
-      await runCommand(options.nextStateCommand, currentItem);
+      console.log(
+        `\n🔍 Testing item ${
+          currentIndex + 1
+        }/${items.length}: "${currentItem}"`,
+      );
+      console.log(
+        `📍 Range: [${left + 1}, ${right + 1}], testing at ${currentIndex + 1}`,
+      );
+
+      // Run next-state command if provided
+      if (options.nextStateCommand) {
+        await runCommand(options.nextStateCommand, currentItem);
+      }
+
+      // Run test command
+      await runCommand(options.testCommand);
+
+      // Get user confirmation
+      const result = confirmResult(currentItem);
+
+      if (result === TestResult.PASS) {
+        console.log(`✅ Item "${currentItem}" passed`);
+        lastGoodIndex = currentIndex;
+        left = currentIndex + 1;
+        break;
+      } else if (result === TestResult.FAIL) {
+        console.log(`❌ Item "${currentItem}" failed`);
+        firstBadIndex = currentIndex;
+        right = currentIndex - 1;
+        break;
+      } else { // TestResult.IGNORE
+        console.log(`⏭️  Item "${currentItem}" ignored (inconclusive)`);
+        ignoredItems.push(currentIndex);
+        currentIndex++; // Try the next item
+      }
     }
 
-    // Run test command
-    await runCommand(options.testCommand);
-
-    // Get user confirmation
-    const passed = confirmResult(currentItem);
-
-    if (passed) {
-      console.log(`✅ Item "${currentItem}" passed`);
-      lastGoodIndex = mid;
-      left = mid + 1;
-    } else {
-      console.log(`❌ Item "${currentItem}" failed`);
-      firstBadIndex = mid;
+    // If we ignored all remaining items in this range, narrow the search to the left side
+    if (currentIndex > right) {
       right = mid - 1;
     }
   }
 
   // Report results
-  console.log("\n" + "=".repeat(50));
+  console.log("\n" + "=".repeat(60));
   console.log("🎉 Bisect complete!");
+
+  if (ignoredItems.length > 0) {
+    console.log(
+      `⏭️  Ignored ${ignoredItems.length} items: ${
+        ignoredItems.map((i) => `"${items[i]}" (${i + 1})`).join(", ")
+      }`,
+    );
+  }
 
   if (lastGoodIndex >= 0) {
     console.log(
@@ -123,6 +180,8 @@ async function bisect(options: BisectOptions): Promise<void> {
         lastGoodIndex + 1
       })`,
     );
+  } else {
+    console.log("✅ No good items found");
   }
 
   if (firstBadIndex >= 0) {
@@ -131,15 +190,55 @@ async function bisect(options: BisectOptions): Promise<void> {
         firstBadIndex + 1
       })`,
     );
+  } else {
+    console.log("❌ No bad items found");
   }
 
-  if (
-    firstBadIndex >= 0 && lastGoodIndex >= 0 &&
-    firstBadIndex === lastGoodIndex + 1
-  ) {
-    console.log(`🔍 The issue was introduced between:`);
+  // Enhanced boundary detection that accounts for ignored items
+  if (firstBadIndex >= 0 && lastGoodIndex >= 0) {
+    const gap = firstBadIndex - lastGoodIndex;
+
+    if (gap === 1) {
+      console.log(`🔍 The issue was introduced between:`);
+      console.log(
+        `   "${items[lastGoodIndex]}" (good) and "${
+          items[firstBadIndex]
+        }" (bad)`,
+      );
+    } else if (gap > 1) {
+      const itemsInBetween = [];
+      for (let i = lastGoodIndex + 1; i < firstBadIndex; i++) {
+        if (ignoredItems.includes(i)) {
+          itemsInBetween.push(`"${items[i]}" (ignored)`);
+        } else {
+          itemsInBetween.push(`"${items[i]}" (untested)`);
+        }
+      }
+
+      console.log(`🔍 The issue was introduced somewhere in this range:`);
+      console.log(`   After: "${items[lastGoodIndex]}" (good)`);
+      if (itemsInBetween.length > 0) {
+        console.log(`   Between: ${itemsInBetween.join(", ")}`);
+      }
+      console.log(`   Before: "${items[firstBadIndex]}" (bad)`);
+
+      if (itemsInBetween.some((item) => item.includes("(untested)"))) {
+        console.log(
+          `💡 Consider testing the untested items to narrow down further.`,
+        );
+      }
+    }
+  } else if (lastGoodIndex >= 0 && firstBadIndex === -1) {
     console.log(
-      `   "${items[lastGoodIndex]}" (good) and "${items[firstBadIndex]}" (bad)`,
+      `🔍 All tested items after "${
+        items[lastGoodIndex]
+      }" were either ignored or not tested.`,
+    );
+  } else if (lastGoodIndex === -1 && firstBadIndex >= 0) {
+    console.log(
+      `🔍 All tested items before "${
+        items[firstBadIndex]
+      }" were either ignored or not tested.`,
     );
   }
 }

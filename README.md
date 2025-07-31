@@ -107,7 +107,7 @@ bisect \
 2. **Binary Search**: Uses binary search algorithm to efficiently narrow down the problematic item
 3. **State Management**: Optionally runs a command to change state before each test
 4. **Test Execution**: Runs your test command for each item
-5. **User Confirmation**: Asks you whether each test passed or failed
+5. **User Confirmation**: Asks you whether each test passed, failed, or should be ignored
 6. **Result**: Reports the last good item and first bad item
 
 ## Input File Format
@@ -139,28 +139,55 @@ During the bisect process, you'll see output like:
 📋 Items: abc123f, def456a, ghi789b, jkl012c, mno345d, pqr678e, stu901f, vwx234g
 
 🔍 Testing item 4/8: "jkl012c"
-📍 Range: [1, 8], testing middle at 4
+📍 Range: [1, 8], testing at 4
 
 🔧 Running: git checkout jkl012c
 🔧 Running: npm test
 
-Did the test PASS for item "jkl012c"? (y/N)
+Test result for item "jkl012c":
+  [p] Pass - the test succeeded
+  [f] Fail - the test failed
+  [i] Ignore - inconclusive/skip this item
+Enter your choice (p/f/i):
 ```
 
-Answer `y` if the test passed, `n` if it failed. The tool will automatically narrow down the search range.
+### Test Result Options
+
+- **Pass (`p`)**: The test succeeded for this item
+- **Fail (`f`)**: The test failed for this item
+- **Ignore (`i`)**: The test result is inconclusive or you want to skip this item
+
+The ignore option is particularly useful when:
+- A commit doesn't build
+- Tests are flaky or unrelated failures occur
+- The item is not relevant to the issue you're investigating
+- You need to skip broken or incomplete states
+
+When you ignore an item, the bisect algorithm will try the next item in sequence and continue the search intelligently.
 
 ## Output
 
 When complete, you'll see a summary:
 
 ```
-==================================================
+============================================================
 🎉 Bisect complete!
+⏭️  Ignored 2 items: "ghi789b" (3), "pqr678e" (6)
 ✅ Last good item: "def456a" (position 2)
-❌ First bad item: "ghi789b" (position 3)
-🔍 The issue was introduced between:
-   "def456a" (good) and "ghi789b" (bad)
+❌ First bad item: "jkl012c" (position 4)
+🔍 The issue was introduced somewhere in this range:
+   After: "def456a" (good)
+   Between: "ghi789b" (ignored)
+   Before: "jkl012c" (bad)
+💡 Consider testing the untested items to narrow down further.
 ```
+
+The output clearly shows:
+- Which items were ignored during the process
+- The last known good item
+- The first known bad item
+- The range where the issue was introduced
+- Suggestions for further investigation if needed
 
 ## Exit Codes
 
@@ -174,6 +201,8 @@ When complete, you'll see a summary:
 - **Test your commands**: Verify your test and state commands work manually first
 - **Order matters**: Ensure your items file is in the correct chronological order
 - **Use version control**: For git bisect, consider using `git log --reverse` to get chronological order
+- **Use ignore wisely**: The ignore option helps handle problematic commits, but try to minimize its use for more accurate results
+- **Document ignored items**: The tool tracks ignored items for you, but consider investigating them later if the issue remains unclear
 
 ## Requirements
 
